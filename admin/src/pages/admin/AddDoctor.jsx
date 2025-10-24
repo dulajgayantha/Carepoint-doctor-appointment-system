@@ -1,6 +1,9 @@
-import React from 'react';
+import React, { useContext } from 'react';
 import { assets } from '../../assets/assets';
 import { useState } from 'react';
+import { AdminContext } from '../../context/AdminContext';
+import {toast} from 'react-toastify'
+import axios from 'axios'
 
 const AddDoctor = () => {
 
@@ -17,9 +20,54 @@ const AddDoctor = () => {
     const [address2,setAddress2] = useState('')
     
     
-    
-    
+    const {backendUrl, aToken} = useContext(AdminContext)
 
+
+    const onSubmitHandler = async (event)=>{
+        event.preventDefault()
+
+        try {
+            if(!docImg){
+                return toast.error("Image not Selected")
+            }
+            const formData = new FormData()
+
+            formData.append('image',docImg)
+            formData.append('name',name)
+            formData.append('email',email)
+            formData.append('password',password)
+            formData.append('experience',experience)
+            formData.append('fees',Number(fees))
+            formData.append('about',about)
+            formData.append('speciality',speciality)
+            formData.append('degree',degree)
+            formData.append('address',JSON.stringify({line1:address1,line2:address2}))
+
+            //console log formData
+            formData.forEach((value,key)=>{
+                console.log(`${key}:${value}`)
+            })
+            const {data} = await axios.post(backendUrl +'/api/admin/add-doctor', formData,{headers:{aToken}})
+            if(data.success){
+                toast.success(data.message)
+                setDocImg(false)
+                setName('')
+                setPassword('')
+                setEmail('')
+                setAddress1('')
+                setAddress2('')
+                setDegree('')
+                setAbout('')
+                setFees('')
+                
+            }else{
+                toast.error(data.message)
+            }
+        } catch (error) {
+            toast.error(error.message)
+            console.log(error)
+        }
+    }
 
 
 
@@ -28,7 +76,7 @@ const AddDoctor = () => {
   const labelStyle = "text-sm font-medium text-gray-600 mb-1 block";
 
   return (
-    <form className='p-6 w-full bg-gray-50/70'>
+    <form onSubmit={onSubmitHandler} className='p-6 w-full bg-gray-50/70'>
       <h2 className='mb-4 text-xl font-semibold text-gray-800'>Add Doctor</h2>
       
       {/* --- Main Form Container --- */}
@@ -61,7 +109,7 @@ const AddDoctor = () => {
         <div className='grid grid-cols-1 lg:grid-cols-2 gap-x-8 gap-y-6 mb-6'>
           <div>
             <label htmlFor="doctorEmail" className={labelStyle}>Doctor Email</label>
-            <input onChange={(e)=>setEmail(e.target.value)} value={email} id="doctorEmail" className={inputStyle} type='email' placeholder='admin@prescripto.com' required />
+            <input onChange={(e)=>setEmail(e.target.value)} value={email} id="doctorEmail" className={inputStyle} type='email' placeholder='test@carepoint.com' required />
           </div>
           <div>
             <label htmlFor="education" className={labelStyle}>Education</label>
