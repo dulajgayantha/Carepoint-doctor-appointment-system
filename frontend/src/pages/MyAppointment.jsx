@@ -3,6 +3,7 @@ import { AppContext } from '../context/AppContext'
 import { useState } from 'react'
 import { useEffect } from 'react'
 import axios from 'axios';
+import { toast } from 'react-toastify';
 
 const MyAppointment = () => {
 
@@ -20,7 +21,7 @@ const MyAppointment = () => {
   const getUserAppointment = async () => {
     try {
 
-      const { data } = await axios.get(backendUrl + '/api/user/appointment', { headers: { token } })
+      const { data } = await axios.get(backendUrl + '/api/user/appointments', { headers: { Authorization: `Bearer ${token}` } })
 
       if (data.success) {
         setAppointment(data.appointments.reverse())
@@ -36,11 +37,11 @@ const MyAppointment = () => {
   const cancelAppointment = async (appointmentId) => {
     try {
 
-      const { data } = await axios.post(backendUrl + '/api/user/cancel-appointment', { appointmentId }, { headers: { token } })
+       const { data } = await axios.post(backendUrl + '/api/user/cancel-appointment', { appointmentId }, { headers: { Authorization: `Bearer ${token}` } })
       if (data.success) {
         toast.success(data.message)
-        getUserAppointment()
-        getDoctorsData()
+        getUserAppointment();
+        getDoctorsData();
       }else{
         toast.error(data.message)
       }
@@ -72,8 +73,8 @@ const MyAppointment = () => {
               <p className='text-neutral-800 font-semibold'>{item.docData.name}</p>
               <p>{item.docData.speciality}</p>
               <p className='text-zinc-700 font-medium mt-1'>Address:</p>
-              <p className='text-xs'>{item.docData.address.line1}</p>
-              <p className='text-xs'>{item.docData.address.line2}</p>
+              <p className='text-xs'>{item.docData?.address?.line1}</p>
+              <p className='text-xs'>{item.docData?.address?.line2}</p>
               <p className='text-sm mt-1'><span className='text-sm text-neutral-700 font-medium'>Date & Time:</span> {slotDateFormat(item.slotDate)} | {item.slotTime}</p>
             </div>
             <div></div>
