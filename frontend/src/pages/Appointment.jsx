@@ -20,11 +20,19 @@ const Appointment = () => {
   const [slotIndex,setSlotIndex] = useState(0)
   const [slotTime,setSlotTime] = useState('')
 
-  const fetchDocInfo = async () => {
+/*  const fetchDocInfo = async () => {
     const docInfo = doctors.find(doc => doc._id === docID)
-    setDocInfo(docInfo)
+    setDocInfo(docInfo) 
     
-  }
+  }*/
+ // ADD THIS NEW, COMBINED USEEFFECT
+  useEffect(() => {
+    if (doctors.length > 0) {
+      console.log("🔄 Doctors list updated. Finding fresh docInfo for ID:", docID);
+      const currentDocInfo = doctors.find(doc => doc._id === docID);
+      setDocInfo(currentDocInfo);
+    }
+  }, [doctors, docID]); // Dependencies are correct
 
   const getAvailableSlots = async () => {
   setDocSlots([]);
@@ -97,11 +105,11 @@ const Appointment = () => {
 
       const slotDate = day + "_" + month + "_" + year
 
-      const { data } = await axios.post(backendUrl + '/api/user/book-appointment', { docID, slotDate, slotTime }, { headers: { token } })
+      const { data } = await axios.post(backendUrl + '/api/user/book-appointment', { docID, slotDate, slotTime }, { headers: { Authorization: `Bearer ${token}` } })
       if (data.success) {
         toast.success(data.message)
         getDoctorsData()
-        navigate('/my-appintments')
+        navigate('/my-appointment')
       } else {
         toast.error(data.message)
       }
@@ -113,13 +121,15 @@ const Appointment = () => {
       toast.error(error.message)
     }
   }
-
+/*
   useEffect(()=>{
     fetchDocInfo()
-  },[doctors,docID])
+  },[doctors,docID])*/
 
   useEffect(()=>{
-    getAvailableSlots()
+    if(docInfo){
+      getAvailableSlots()
+    }
   },[docInfo])
 
   useEffect(()=>{

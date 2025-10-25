@@ -1,4 +1,5 @@
-import { createContext, useEffect, useState } from "react";
+// At the top of AppContext.jsx
+import { createContext, useEffect, useState, useCallback } from "react";
 import axios from 'axios';
 import { toast } from 'react-toastify';
 
@@ -68,19 +69,22 @@ const AppContextProvider = (props) => {
         toast.info('Logged out successfully');
     };
 
-    const getDoctorsData = async () => {
-        try {
-            const { data } = await axios.get(`${backendUrl}/api/doctor/list`);
-            if (data.success) {
-                setDoctors(data.doctors);
-            } else {
-                toast.error(data.message);
-            }
-        } catch (error) {
-            console.log(error);
-            toast.error(error.response?.data?.message || error.message);
+    const getDoctorsData = useCallback(async () => {
+    try {
+        const { data } = await axios.get(`${backendUrl}/api/doctor/list`);
+        if (data.success) {
+            console.log("✅ CONTEXT: Fetched new doctors data.", data.doctors); // <-- ADD THIS
+            setDoctors(data.doctors);
+        } else {
+            toast.error(data.message);
         }
-    };
+    } catch (error) {
+        console.log(error);
+            toast.error(error.response?.data?.message || error.message);
+    }
+}, [backendUrl]);
+
+    
 
     useEffect(() => {
         getDoctorsData();
@@ -104,6 +108,7 @@ const AppContextProvider = (props) => {
         token,
         setToken,
         backendUrl,
+        getDoctorsData,
         userData,
         setUserData,
         fetchUserData,

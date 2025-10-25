@@ -15,7 +15,7 @@ const Header = () => {
                 <img className='w-28' src={assets.group_profiles} alt='group photo'/>
                 <p>
                    Easily connect with certified doctors and get the  <br className='hidden sm:block'/>
-                  care you need.
+                   care you need.
                 </p>
             </div>
               <a href="#speciality" className='flex items-center gap-2 bg-white px-8 py-3 rounded-full text-gray-600 text-sm m-auto md:m-0 hover:scale-105 transition-all duration-300 '>

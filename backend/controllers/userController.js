@@ -208,7 +208,8 @@ const bookAppointment = async (req, res) => {
             amount: docData.fees,
             slotTime,
             slotDate,
-            date: new Date()
+            date: new Date(),
+            address: docData.address
         };
 
         const newAppointment = new appointmentModel(appointmentData);
