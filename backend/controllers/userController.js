@@ -28,7 +28,7 @@ const registerUser = async (req, res) => {
         const hashedPassword = await bcrypt.hash(password, salt);
 
         const newUser = new userModel({ name, email, password: hashedPassword });
-        const user = await newUser.save(); 
+        const user = await newUser.save();
 
         const token = jwt.sign({ id: user._id }, process.env.JWT_SECRET, { expiresIn: "7d" });
 
@@ -42,47 +42,61 @@ const registerUser = async (req, res) => {
 
 // API to login user
 const loginUser = async (req, res) => {
-  try {
-    const { email, password } = req.body;
+    try {
+        const { email, password } = req.body;
 
-    if (!email || !password) {
-      return res.json({ success: false, message: "All fields are required" });
+        if (!email || !password) {
+            return res.json({ success: false, message: "All fields are required" });
+        }
+
+        const user = await userModel.findOne({ email });
+        if (!user) {
+            return res.json({ success: false, message: "User not found" });
+        }
+
+        const isMatch = await bcrypt.compare(password, user.password);
+
+        if (isMatch) {
+            const token = jwt.sign({ id: user._id }, process.env.JWT_SECRET, { expiresIn: "7d" });
+
+            // Return user data along with token
+            return res.json({
+                success: true,
+                token,
+                user: {
+                    id: user._id,
+                    name: user.name,
+                    email: user.email,
+                    image: user.image || null,
+                    phone: user.phone || null,
+                    address: user.address || null,
+                    dob: user.dob || null,
+                    gender: user.gender || null
+                }
+            });
+        } else {
+            return res.json({ success: false, message: "Invalid credentials" });
+        }
+
+    } catch (error) {
+        console.log(error);
+        return res.json({ success: false, message: "Login failed" });
     }
-
-    const user = await userModel.findOne({ email });
-    if (!user) {
-      return res.json({ success: false, message: "User not found" });
-    }
-
-    const isMatch = await bcrypt.compare(password, user.password);
-
-    if (isMatch) {
-      const token = jwt.sign({ id: user._id }, process.env.JWT_SECRET, { expiresIn: "7d" });
-      return res.json({ success: true, token });
-    } else {
-      return res.json({ success: false, message: "Invalid credentials" });
-    }
-
-  } catch (error) {
-    console.log(error);
-    return res.json({ success: false, message: "Login failed" });
-  }
 };
 
-//API to get user profile data - FIXED
 //API to get user profile data - FIXED
 const getProfile = async (req, res) => {
     try {
         console.log('🔍 getProfile called - req.user:', req.user); // Debug log
-        
+
         // ✅ FIX: Get userID from req.user (set by auth middleware)
         const userID = req.user.id;
-        
+
         if (!userID) {
             console.log('❌ No user ID in req.user');
-            return res.status(400).json({ 
-                success: false, 
-                message: "User ID not found" 
+            return res.status(400).json({
+                success: false,
+                message: "User ID not found"
             });
         }
 
@@ -91,16 +105,16 @@ const getProfile = async (req, res) => {
 
         if (!userData) {
             console.log('❌ User not found in database for ID:', userID);
-            return res.status(404).json({ 
-                success: false, 
-                message: "User not found" 
+            return res.status(404).json({
+                success: false,
+                message: "User not found"
             });
         }
 
         console.log('✅ User found:', userData.email);
 
-        return res.json({ 
-            success: true, 
+        return res.json({
+            success: true,
             user: {
                 id: userData._id,
                 name: userData.name,
@@ -115,19 +129,22 @@ const getProfile = async (req, res) => {
 
     } catch (error) {
         console.log('💥 getProfile error:', error);
-        return res.status(500).json({ 
-            success: false, 
-            message: "Failed to get profile" 
+        return res.status(500).json({
+            success: false,
+            message: "Failed to get profile"
         });
     }
 }
 
-//API to update user profile - UPDATED
+//API to update user profile - FIXED
 const updateProfile = async (req, res) => {
     try {
-        const userID = req.user.id; // Get from auth middleware
+        const userID = req.user.id;
         const { name, phone, address, dob, gender } = req.body;
         const imageFile = req.file;
+
+        console.log('🔄 Update profile request received');
+        console.log('📦 Request body:', { name, phone, address, dob, gender });
 
         if (!name || !phone || !dob || !gender) {
             return res.json({ success: false, message: "Data Missing" });
@@ -135,24 +152,37 @@ const updateProfile = async (req, res) => {
 
         const updateData = { name, phone, dob, gender };
 
-        // Handle address properly
+        // ✅ FIX: Use JSON.parse (capital JSON)
         if (address) {
-            updateData.address = typeof address === 'string' ? JSON.parse(address) : address;
+            try {
+                updateData.address = typeof address === 'string' ? JSON.parse(address) : address;
+                console.log('✅ Address parsed successfully');
+            } catch (error) {
+                console.log('❌ Address parsing error:', error);
+                return res.json({ success: false, message: "Invalid address format" });
+            }
         }
 
         if (imageFile) {
-            //upload image to cloudinary
-            const imageUpload = await cloudinary.uploader.upload(imageFile.path, { resource_type: 'image' });
-            const imageURL = imageUpload.secure_url;
-            updateData.image = imageURL;
+            try {
+                console.log('📤 Uploading image to Cloudinary...');
+                const imageUpload = await cloudinary.uploader.upload(imageFile.path, { resource_type: 'image' });
+                const imageURL = imageUpload.secure_url;
+                updateData.image = imageURL;
+                console.log('✅ Image uploaded:', imageURL);
+            } catch (uploadError) {
+                console.log('❌ Image upload failed:', uploadError);
+                return res.json({ success: false, message: "Image upload failed" });
+            }
         }
 
+        console.log('💾 Updating user with data:', updateData);
         await userModel.findByIdAndUpdate(userID, updateData);
 
         return res.json({ success: true, message: "Profile Updated" });
 
     } catch (error) {
-        console.log(error);
+        console.log('💥 Update profile error:', error);
         return res.json({ success: false, message: "Profile update failed" });
     }
 }
@@ -197,7 +227,9 @@ const bookAppointment = async (req, res) => {
             _id: docData._id,
             name: docData.name,
             specialization: docData.specialization,
-            fees: docData.fees
+            fees: docData.fees,
+            image: docData.image, // ✅ Add this
+            address: docData.address // ✅ Add this
         };
 
         const appointmentData = {
@@ -208,8 +240,7 @@ const bookAppointment = async (req, res) => {
             amount: docData.fees,
             slotTime,
             slotDate,
-            date: new Date(),
-            address: docData.address
+            date: Date.now()
         };
 
         const newAppointment = new appointmentModel(appointmentData);
@@ -275,12 +306,12 @@ const cancelAppointment = async (req, res) => {
     }
 }
 
-export { 
-    registerUser, 
-    loginUser, 
-    getProfile, 
-    updateProfile, 
-    bookAppointment, 
-    listAppointment, 
-    cancelAppointment 
+export {
+    registerUser,
+    loginUser,
+    getProfile,
+    updateProfile,
+    bookAppointment,
+    listAppointment,
+    cancelAppointment
 };
