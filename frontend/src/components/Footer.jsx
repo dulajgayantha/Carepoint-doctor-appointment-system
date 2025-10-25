@@ -8,8 +8,8 @@ const Footer = () => {
             
         {/* --------Left Section--------- */}
         <div>
-            <img className='mb-5 w-40' src={assets.logo} alt="" />
-            <p className='w-full md:w-2/3 text-gray-600 leading-6'>Lorem ipsum dolor sit amet consectetur adipisicing elit. Dolorem enim vitae dolore ex est, illo voluptate ipsa tempora fugiat, quis ratione ut quos pariatur adipisci voluptatem. Obcaecati dignissimos consectetur tempore!</p>
+            <img className='mb-5 w-40' src={assets.logonew} alt="" />
+            <p className='w-full md:w-2/3 text-gray-600 leading-6'>"At CarePoint, we believe that quality healthcare should be accessible to everyone. We connect you with certified specialists for the expert care you deserve."</p>
         </div>
 
         {/* --------Center Section--------- */}
