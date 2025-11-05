@@ -91,36 +91,47 @@ const Appointment = () => {
 };
 
   const bookAppointment = async () => {
-    if (!token) {
-      toast.warn('Login to book appointment')
-      return navigate('/login')
-    }
-
-    try {
-      const date = docSlots[slotIndex][0].datetime
-
-      let day = date.getDate()
-      let month = date.getMonth() + 1
-      let year = date.getFullYear()
-
-      const slotDate = day + "_" + month + "_" + year
-
-      const { data } = await axios.post(backendUrl + '/api/user/book-appointment', { docID, slotDate, slotTime }, { headers: { Authorization: `Bearer ${token}` } })
-      if (data.success) {
-        toast.success(data.message)
-        getDoctorsData()
-        navigate('/my-appointment')
-      } else {
-        toast.error(data.message)
-      }
-
-
-
-    } catch (error) {
-      console.log(error)
-      toast.error(error.message)
-    }
+  if (!token) {
+    toast.warn('Login to book appointment');
+    return navigate('/login');
   }
+
+  // ✅ Check if a time slot is selected
+  if (!slotTime || !slotIndex || !docSlots[slotIndex] || docSlots[slotIndex].length === 0) {
+    toast.error('Please select a valid time slot');
+    return;
+  }
+
+  try {
+    const date = docSlots[slotIndex][0].datetime;
+
+    let day = date.getDate();
+    let month = date.getMonth() + 1;
+    let year = date.getFullYear();
+
+    const slotDate = day + "_" + month + "_" + year;
+
+    console.log('Booking with:', { docID, slotDate, slotTime }); // Debug log
+
+    const { data } = await axios.post(
+      backendUrl + '/api/user/book-appointment',
+      { docID, slotDate, slotTime },
+      { headers: { Authorization: `Bearer ${token}` } }
+    );
+
+    if (data.success) {
+      toast.success(data.message);
+      getDoctorsData();
+      navigate('/my-appointment');
+    } else {
+      toast.error(data.message);
+    }
+
+  } catch (error) {
+    console.log(error);
+    toast.error(error.response?.data?.message || "Failed to book appointment");
+  }
+};
 /*
   useEffect(()=>{
     fetchDocInfo()

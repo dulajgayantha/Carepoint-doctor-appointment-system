@@ -15,5 +15,6 @@ userRouter.get('/appointments',authUser,listAppointment)
 userRouter.post('/cancel-appointment',authUser,cancelAppointment)
 
 
+
 export default userRouter;
 
