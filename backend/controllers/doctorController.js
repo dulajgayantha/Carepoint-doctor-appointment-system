@@ -23,4 +23,5 @@ const doctorList = async (req,res)=>{
         res.json({success:false,message:error.message})
     }
 }
+
 export {changeAvailability,doctorList}

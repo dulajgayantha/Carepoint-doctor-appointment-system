@@ -85,10 +85,14 @@ const allDoctors = async (req, res) => {
     }
 }
 
-//API TO GET ALL APPOINTMENT LIST
+//API TO GET ALL APPOINTMENT LIST - FIXED
 const appointmentAdmin = async (req, res) => {
     try {
-        const appointments = await appointmentModel.find({});
+        // ✅ FIX: Only get non-cancelled appointments
+        const appointments = await appointmentModel.find({ cancelled: { $ne: true } });
+        
+        console.log(`📊 Admin appointments fetched: ${appointments.length} (excluding cancelled)`);
+        
         res.json({ success: true, appointments });
     } catch (error) {
         console.error('Error fetching appointments:', error);
@@ -98,24 +102,28 @@ const appointmentAdmin = async (req, res) => {
     }
 };
 
-// API to get dashboard data for damin panel
+// API to get dashboard data for admin panel - UPDATED
 const adminDashboard = async (req, res) => {
-
     try {
-
         const doctors = await doctorModel.find({})
         const users = await userModel.find({})
-        const appointments = await appointmentModel.find({})
+        const allAppointments = await appointmentModel.find({})
+        
+        // ✅ FIX: Filter out cancelled appointments for active counts
+        const activeAppointments = allAppointments.filter(apt => !apt.cancelled);
+        const cancelledAppointments = allAppointments.filter(apt => apt.cancelled);
 
-        const dashData ={
+        const dashData = {
             doctors: doctors.length,
-            appointments:appointments.length,
-            patients:users.length,
-            latestAppointments: appointments.reverse().slice(0,5)
-            
+            appointments: activeAppointments.length, // Only active appointments
+            patients: users.length,
+            cancelledAppointments: cancelledAppointments.length, // Add cancelled count
+            latestAppointments: activeAppointments.reverse().slice(0,5) // Only show active in latest
         }
 
-        res.json({success:true,dashData})
+        console.log(`📊 Dashboard: ${activeAppointments.length} active, ${cancelledAppointments.length} cancelled`);
+
+        res.json({success: true, dashData})
 
     } catch (error) {
         console.error(error);
@@ -123,4 +131,33 @@ const adminDashboard = async (req, res) => {
     }
 }
 
-export { addDoctor, loginAdmin, allDoctors, appointmentAdmin, adminDashboard }
+//API for appointment cancellation
+const appointmentCancel = async (req, res) => {
+    try {
+        const { appointmentId } = req.body;
+
+        const appointmentData = await appointmentModel.findById(appointmentId);
+
+        await appointmentModel.findByIdAndUpdate(appointmentId, { cancelled: true });
+
+        //releasing doctor slot
+        const { docID, slotDate, slotTime } = appointmentData;
+
+        const doctorData = await doctorModel.findById(docID);
+
+        if (doctorData && doctorData.slots_booked && doctorData.slots_booked[slotDate]) {
+            let slots_booked = doctorData.slots_booked;
+            slots_booked[slotDate] = slots_booked[slotDate].filter(e => e !== slotTime);
+
+            await doctorModel.findByIdAndUpdate(docID, { slots_booked });
+        }
+
+        return res.json({ success: true, message: 'Appointment cancelled' });
+
+    } catch (error) {
+        console.log(error);
+        return res.json({ success: false, message: error.message });
+    }
+}
+
+export { addDoctor, loginAdmin, allDoctors, appointmentAdmin, adminDashboard, appointmentCancel }
