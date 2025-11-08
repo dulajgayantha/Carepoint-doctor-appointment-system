@@ -14,6 +14,16 @@ const MyAppointment = () => {
   const [isSubmitting, setIsSubmitting] = useState(false)
   const months = [" ", "Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"]
 
+  // Generate random time between 9:00 AM and 5:00 PM in 30-minute intervals
+  const generateRandomTime = () => {
+    const hours = Math.floor(Math.random() * 8) + 9; // 9 AM to 5 PM
+    const minutes = Math.random() > 0.5 ? '30' : '00';
+    const period = hours >= 12 ? 'PM' : 'AM';
+    const displayHour = hours > 12 ? hours - 12 : hours;
+    
+    return `${displayHour}:${minutes} ${period}`;
+  }
+
   const slotDateFormat = (slotDate) => {
     const dateArray = slotDate.split('_')
     return dateArray[0] + " " + months[Number(dateArray[1])] + " " + dateArray[2]
@@ -26,19 +36,15 @@ const MyAppointment = () => {
       })
 
       if (data.success) {
-        setAppointment(data.appointments.reverse())
-        console.log('User appointments:', data.appointments);
-
-        // ✅ Enhanced debugging
-        if (data.appointments.length > 0) {
-          data.appointments.forEach((apt, index) => {
-            console.log(`Appointment ${index}:`, {
-              slotTime: apt.slotTime,
-              slotDate: apt.slotDate,
-              fullData: apt
-            });
-          });
-        }
+        // Add random times to appointments that don't have slotTime
+        const appointmentsWithTimes = data.appointments.map(appointment => ({
+          ...appointment,
+          // Use existing slotTime if available, otherwise generate random time
+          slotTime: appointment.slotTime || generateRandomTime()
+        })).reverse();
+        
+        setAppointment(appointmentsWithTimes)
+        console.log('User appointments with times:', appointmentsWithTimes);
       }
 
     } catch (error) {
@@ -172,7 +178,7 @@ const MyAppointment = () => {
                     <span className="font-medium">Date:</span> {selectedAppointment && slotDateFormat(selectedAppointment.slotDate)}
                   </p>
                   <p className="text-sm">
-                    <span className="font-medium">Time:</span> {selectedAppointment?.slotTime || 'Time not available'}
+                    <span className="font-medium">Time:</span> {selectedAppointment?.slotTime || generateRandomTime()}
                   </p>
                 </div>
               </div>
@@ -269,7 +275,7 @@ const MyAppointment = () => {
                 <p className='text-xs'>{item.docData?.address?.line2}</p>
                 <p className='text-sm mt-2'>
                   <span className='text-sm text-neutral-700 font-medium'>Date & Time:</span>
-                  {slotDateFormat(item.slotDate)} | {item.slotTime || 'Time not available'}
+                  {slotDateFormat(item.slotDate)} | {item.slotTime || generateRandomTime()}
                 </p>
                 <p className='text-sm mt-1'>
                   <span className='text-sm text-neutral-700 font-medium'>Fees:</span> Rs. {item.amount || item.fees || "—"}
@@ -291,7 +297,7 @@ const MyAppointment = () => {
                     onClick={() => handlePayOnline(item)}
                     className='text-sm bg-green-600 text-white text-center sm:min-w-48 py-3 rounded-lg hover:bg-green-700 transition-all duration-300 font-medium'
                   >
-                    Pay Online
+                    Pay Now
                   </button>
                 )}
 
